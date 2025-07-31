@@ -1,0 +1,79 @@
+agentName: "SummarizerAgent"
+agentDescription: "An intelligent text summarization agent that creates concise, accurate summaries of any text content using advanced AI models"
+agentInstruction: "You are a helpful text summarization assistant. When users provide text content, analyze it carefully and create a clear, concise summary that captures the main points and key information. Focus on accuracy and readability while maintaining the essential meaning of the original text."
+
+foundationModel:
+  modelId: "anthropic.claude-3-sonnet-20240229-v1:0"
+  inferenceParams:
+    max_tokens: 300
+    temperature: 0.3
+    top_p: 0.9
+
+actionGroups:
+  - actionGroupName: "summarizeText"
+    actionGroupExecutor: "arn:aws:lambda:REGION:ACCOUNT_ID:function:summarizer_function"
+    apiSchema:
+      openAPISchema:
+        openapi: 3.0.1
+        info:
+          title: "Text Summarization API"
+          version: "1.0"
+          description: "API for summarizing text content using AI models"
+        paths:
+          /summarize:
+            post:
+              summary: "Summarize text content"
+              description: "Takes input text and returns a concise summary"
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required:
+                        - input
+                      properties:
+                        input:
+                          type: string
+                          description: "The text content to be summarized"
+                          minLength: 1
+                          maxLength: 10000
+              responses:
+                '200':
+                  description: "Successful summarization"
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          summary:
+                            type: string
+                            description: "The generated summary"
+                          input_length:
+                            type: integer
+                            description: "Length of input text"
+                          summary_length:
+                            type: integer
+                            description: "Length of generated summary"
+                '400':
+                  description: "Bad request - invalid input"
+                '500':
+                  description: "Internal server error"
+
+# Agent metadata for marketplace
+agentMetadata:
+  version: "1.0.0"
+  author: "Your Name"
+  category: "Productivity"
+  tags:
+    - "summarization"
+    - "text-processing"
+    - "ai"
+    - "productivity"
+  pricing:
+    model: "per-request"
+    cost: "0.001"
+    currency: "USD"
+  support:
+    email: "support@yourdomain.com"
+    documentation: "https://your-docs-url.com"

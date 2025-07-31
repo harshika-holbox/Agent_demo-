@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Summarization Agent Lambda Function
+
+Parameters:
+  Region:
+    Type: String
+    Default: us-east-1
+    Description: AWS Region for deployment
+  
+  AccountId:
+    Type: String
+    Description: AWS Account ID
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+    MemorySize: 256
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+
+Resources:
+  SummarizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: summarizer_function
+      CodeUri: summarizer/
+      Handler: app.lambda_handler
+      Policies:
+        - BedrockInvokeModelPolicy:
+            ModelId: anthropic.claude-3-sonnet-20240229-v1:0
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /summarize
+            Method: post
+
+  # IAM Role for the function
+  SummarizerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: 
+                  - !Sub "arn:aws:bedrock:${Region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+
+Outputs:
+  SummarizerFunctionArn:
+    Description: ARN of the Summarizer Lambda Function
+    Value: !GetAtt SummarizerFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-SummarizerFunctionArn"
+  
+  SummarizerFunctionName:
+    Description: Name of the Summarizer Lambda Function
+    Value: !Ref SummarizerFunction
+    Export:
+      Name: !Sub "${AWS::StackName}-SummarizerFunctionName"
+  
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/summarize"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiEndpoint" 
