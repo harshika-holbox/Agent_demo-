@@ -20,23 +20,8 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "No input text provided"})
             }
 
-        # Configure AWS credentials from environment variables
-        aws_config = {}
-        
-        # Check for AWS credentials in environment variables
-        if os.getenv('AWS_ACCESS_KEY_ID') and os.getenv('AWS_SECRET_ACCESS_KEY'):
-            aws_config.update({
-                'aws_access_key_id': os.getenv('AWS_ACCESS_KEY_ID'),
-                'aws_secret_access_key': os.getenv('AWS_SECRET_ACCESS_KEY'),
-                'region_name': os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
-            })
-            
-            # Add session token if available
-            if os.getenv('AWS_SESSION_TOKEN'):
-                aws_config['aws_session_token'] = os.getenv('AWS_SESSION_TOKEN')
-        
-        # Initialize Bedrock client with credentials
-        bedrock = boto3.client("bedrock-runtime", **aws_config)
+        # Initialize Bedrock client (credentials from environment)
+        bedrock = boto3.client("bedrock-runtime")
         
         # Get model ID from environment or use default
         model_id = os.getenv('BEDROCK_MODEL_ID', 'anthropic.claude-3-sonnet-20240229-v1:0')
