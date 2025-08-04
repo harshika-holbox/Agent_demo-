@@ -44,13 +44,13 @@ def test_summarization():
         "input": sample_text.strip()
     }
     
-    print("🧪 Testing Summarization Agent...")
-    print(f"📝 Input text length: {len(sample_text)} characters")
+    print("Testing Summarization Agent...")
+    print(f"Input text length: {len(sample_text)} characters")
     print("-" * 50)
     
     # Check if AWS credentials are available
     if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
-        print("⚠️  Warning: AWS credentials not found in environment variables")
+        print("Warning: AWS credentials not found in environment variables")
         print("   Make sure your .env file contains AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
         print("   Or run: aws configure")
     
@@ -58,44 +58,44 @@ def test_summarization():
         # Call the lambda handler
         result = lambda_handler(test_event, None)
         
-        print("✅ Function executed successfully!")
-        print(f"📊 Status Code: {result.get('statusCode', 'N/A')}")
+        print("Function executed successfully!")
+        print(f"Status Code: {result.get('statusCode', 'N/A')}")
         
         if result.get('statusCode') == 200:
             body = json.loads(result.get('body', '{}'))
-            print(f"📄 Summary: {body.get('summary', 'No summary generated')}")
-            print(f"📏 Input Length: {body.get('input_length', 'N/A')}")
-            print(f"📏 Summary Length: {body.get('summary_length', 'N/A')}")
+            print(f"Summary: {body.get('summary', 'No summary generated')}")
+            print(f"Input Length: {body.get('input_length', 'N/A')}")
+            print(f"Summary Length: {body.get('summary_length', 'N/A')}")
         else:
-            print(f"❌ Error: {result.get('body', 'Unknown error')}")
+            print(f"Error: {result.get('body', 'Unknown error')}")
             
     except Exception as e:
-        print(f"❌ Test failed with error: {str(e)}")
+        print(f"Test failed with error: {str(e)}")
         return False
     
     return True
 
 def test_empty_input():
     """Test with empty input"""
-    print("\n🧪 Testing with empty input...")
+    print("\nTesting with empty input...")
     
     test_event = {"input": ""}
     
     try:
         result = lambda_handler(test_event, None)
-        print(f"📊 Status Code: {result.get('statusCode', 'N/A')}")
+        print(f"Status Code: {result.get('statusCode', 'N/A')}")
         
         if result.get('statusCode') == 400:
-            print("✅ Correctly handled empty input")
+            print("Correctly handled empty input")
         else:
-            print("❌ Should have returned 400 for empty input")
+            print("Should have returned 400 for empty input")
             
     except Exception as e:
-        print(f"❌ Test failed: {str(e)}")
+        print(f"Test failed: {str(e)}")
 
 def test_large_input():
     """Test with large input text"""
-    print("\n🧪 Testing with large input...")
+    print("\nTesting with large input...")
     
     # Create a large text (simulate long document)
     large_text = "This is a test sentence. " * 1000  # ~25,000 characters
@@ -104,21 +104,21 @@ def test_large_input():
     
     try:
         result = lambda_handler(test_event, None)
-        print(f"📊 Status Code: {result.get('statusCode', 'N/A')}")
+        print(f"Status Code: {result.get('statusCode', 'N/A')}")
         
         if result.get('statusCode') == 200:
             body = json.loads(result.get('body', '{}'))
-            print(f"📏 Input Length: {body.get('input_length', 'N/A')}")
-            print(f"📏 Summary Length: {body.get('summary_length', 'N/A')}")
-            print("✅ Successfully processed large input")
+            print(f"Input Length: {body.get('input_length', 'N/A')}")
+            print(f"Summary Length: {body.get('summary_length', 'N/A')}")
+            print("Successfully processed large input")
         else:
-            print(f"❌ Failed to process large input: {result.get('body', 'Unknown error')}")
+            print(f"Failed to process large input: {result.get('body', 'Unknown error')}")
             
     except Exception as e:
-        print(f"❌ Test failed: {str(e)}")
+        print(f"Test failed: {str(e)}")
 
 if __name__ == "__main__":
-    print("🚀 Starting Summarization Agent Tests")
+    print("Starting Summarization Agent Tests")
     print("=" * 50)
     
     # Run tests
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 50)
     if success:
-        print("✅ All tests completed!")
+        print("All tests completed!")
     else:
-        print("❌ Some tests failed!")
+        print("Some tests failed!")
         sys.exit(1) 

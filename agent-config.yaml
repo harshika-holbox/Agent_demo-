@@ -1,6 +1,6 @@
-agentName: "SummarizerAgent"
-agentDescription: "An intelligent text summarization agent that creates concise, accurate summaries of any text content using advanced AI models"
-agentInstruction: "You are a helpful text summarization assistant. When users provide text content, analyze it carefully and create a clear, concise summary that captures the main points and key information. Focus on accuracy and readability while maintaining the essential meaning of the original text."
+agentName: "MultiFormatSummarizerAgent"
+agentDescription: "An intelligent document summarization agent that creates concise, accurate summaries from PDFs, images, Word docs, Excel files, and text content using advanced AI models and OCR technology"
+agentInstruction: "You are a helpful document summarization assistant. When users provide text content or upload documents (PDFs, images, Word docs, Excel files, etc.), analyze the content carefully and create a clear, concise summary that captures the main points and key information. For images, use OCR to extract text first, then summarize. Focus on accuracy and readability while maintaining the essential meaning of the original content."
 
 foundationModel:
   modelId: "anthropic.claude-3-sonnet-20240229-v1:0"
@@ -16,28 +16,35 @@ actionGroups:
       openAPISchema:
         openapi: 3.0.1
         info:
-          title: "Text Summarization API"
-          version: "1.0"
-          description: "API for summarizing text content using AI models"
+          title: "Multi-Format Document Summarization API"
+          version: "2.0"
+          description: "API for summarizing text content and documents (PDFs, images, Word docs, Excel files) using AI models and OCR"
         paths:
           /summarize:
             post:
-              summary: "Summarize text content"
-              description: "Takes input text and returns a concise summary"
+              summary: "Summarize text content or documents"
+              description: "Takes input text or file content and returns a concise summary"
               requestBody:
                 required: true
                 content:
                   application/json:
                     schema:
                       type: object
-                      required:
-                        - input
                       properties:
                         input:
                           type: string
                           description: "The text content to be summarized"
                           minLength: 1
                           maxLength: 10000
+                        file_content:
+                          type: string
+                          description: "Base64 encoded file content"
+                        filename:
+                          type: string
+                          description: "Name of the uploaded file"
+                      anyOf:
+                        - required: ["input"]
+                        - required: ["file_content", "filename"]
               responses:
                 '200':
                   description: "Successful summarization"
@@ -49,6 +56,9 @@ actionGroups:
                           summary:
                             type: string
                             description: "The generated summary"
+                          source:
+                            type: string
+                            description: "Source of the input (text or file info)"
                           input_length:
                             type: integer
                             description: "Length of input text"
@@ -67,7 +77,10 @@ agentMetadata:
   category: "Productivity"
   tags:
     - "summarization"
-    - "text-processing"
+    - "document-processing"
+    - "ocr"
+    - "pdf-processing"
+    - "image-processing"
     - "ai"
     - "productivity"
   pricing:
