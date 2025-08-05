@@ -138,7 +138,7 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
         # Test AWS Bedrock connection
         try:
             test_bedrock = boto3.client("bedrock-runtime")
-            print("✅ AWS Bedrock client created successfully")
+            print("AWS Bedrock client created successfully")
         except Exception as e:
             return f"Error: Cannot create AWS Bedrock client: {str(e)}"
         
@@ -148,8 +148,8 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
             result = agent.process_query(user_query, document_content, filename if 'filename' in locals() else "text_input")
                 
             # Debug: Print the full result structure
-            print(f"🔍 Debug - Full result: {result}")
-            print(f"🔍 Debug - Action result: {result.get('action_result', {})}")
+            print(f"Debug - Full result: {result}")
+            print(f"Debug - Action result: {result.get('action_result', {})}")
             
             # Extract the main result from action_result
             action_result = result.get('action_result', {})
@@ -158,38 +158,38 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
             # Get the appropriate result based on action type
             if action_type == "summarize":
                 main_result = action_result.get('result', 'No summary generated')
-                result_title = "📋 Summary"
+                result_title = "Summary"
             elif action_type == "answer_question":
                 main_result = action_result.get('answer', 'No answer generated')
-                result_title = "❓ Answer"
+                result_title = "Answer"
             elif action_type == "extract_entities":
                 entities = action_result.get('entities', {})
                 if isinstance(entities, dict):
                     main_result = "\n".join([f"**{k.title()}:** {', '.join(v) if isinstance(v, list) else str(v)}" for k, v in entities.items()])
                 else:
                     main_result = str(entities)
-                result_title = "👥 Extracted Entities"
+                result_title = "Extracted Entities"
             elif action_type == "translate":
                 main_result = action_result.get('translation', 'No translation generated')
-                result_title = f"🌐 Translation ({action_result.get('target_language', 'Unknown')})"
+                result_title = f"Translation ({action_result.get('target_language', 'Unknown')})"
             elif action_type == "classify":
                 main_result = action_result.get('classification', 'No classification generated')
-                result_title = "🏷️ Document Classification"
+                result_title = "Document Classification"
             elif action_type == "extract_insights":
                 main_result = action_result.get('insights', 'No insights generated')
-                result_title = "💡 Key Insights"
+                result_title = "Key Insights"
             elif action_type == "analyze_sentiment":
                 main_result = action_result.get('sentiment_analysis', 'No sentiment analysis generated')
-                result_title = "😊 Sentiment Analysis"
+                result_title = "Sentiment Analysis"
             elif action_type == "extract_action_items":
                 main_result = action_result.get('action_items', 'No action items found')
-                result_title = "✅ Action Items"
+                result_title = "Action Items"
             elif action_type == "compare_documents":
                 main_result = action_result.get('analysis', 'No comparison analysis generated')
-                result_title = "📊 Document Comparison"
+                result_title = "Document Comparison"
             elif action_type == "ask_clarification":
                 main_result = action_result.get('message', 'Please clarify what you would like me to do.')
-                result_title = "❓ Clarification Needed"
+                result_title = "Clarification Needed"
             else:
                 main_result = (action_result.get('result') or 
                               action_result.get('answer') or 
@@ -202,19 +202,19 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
                               action_result.get('analysis') or 
                               action_result.get('message') or 
                               'No results available')
-                result_title = "📋 Results"
+                result_title = "Results"
             
-            print(f"🔍 Debug - Action type: {action_type}")
-            print(f"🔍 Debug - Main result: {main_result[:200]}...")
+            print(f"Debug - Action type: {action_type}")
+            print(f"Debug - Main result: {main_result[:200]}...")
             
             # Format the response
             response = f"""
-## 🤖 Document Intelligence Agent Response
+## Document Intelligence Agent Response
 
 **Source:** {source_info}
 **User Query:** {result['user_query']}
 
-### 🧠 Agent Reasoning
+### Agent Reasoning
 **Action Chosen:** {result['intent_analysis']['action'].upper()}
 **Confidence:** {result['intent_analysis']['confidence']:.2f}
 **Reasoning:** {result['agent_reasoning']}
@@ -222,28 +222,28 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
 ### {result_title}
 {main_result}
 
-### 📊 Document Statistics
+### Document Statistics
 - **Input Length:** {len(document_content)} characters
 - **Processing Time:** Real-time
 - **Agent Memory:** Active
-            """
+                """
                 
         else:
             # Default to summarization if no specific query
             result = agent.process_query("Summarize this document", document_content)
             response = f"""
-## 🤖 Document Intelligence Agent - Auto Summary
+## Document Intelligence Agent - Auto Summary
 
 **Source:** {source_info}
 
-### 📋 Summary
+### Summary
 {result['action_result'].get('result', 'No summary generated')}
 
-### 📊 Document Statistics
+### Document Statistics
 - **Input Length:** {len(document_content)} characters
 - **Agent Action:** {result['intent_analysis']['action'].upper()}
 - **Confidence:** {result['intent_analysis']['confidence']:.2f}
-            """
+                """
         
         return response
         
@@ -286,7 +286,7 @@ def create_gradio_interface():
                 label="Agent Response"
             )
         ],
-        title="🤖 AWS Agent Core - Document Intelligence Agent",
+        title="AWS Agent Core - Document Intelligence Agent",
         description="An intelligent document processing agent that can understand your documents and answer questions, extract insights, translate content, and much more. Powered by Claude 3 Sonnet and AWS Agent Core.",
         examples=[
             [
