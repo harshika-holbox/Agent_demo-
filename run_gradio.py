@@ -7,8 +7,8 @@ import os
 import sys
 from dotenv import load_dotenv
 
-# Add the summarizer directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'summarizer'))
+# Add the document_intelligence directory to the path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'document_intelligence'))
 
 # Load environment variables
 load_dotenv()
@@ -53,7 +53,7 @@ def main():
     
     try:
         # Import and run the Gradio interface
-        from summarizer.app import create_gradio_interface
+        from document_intelligence.app import create_gradio_interface
         
         iface = create_gradio_interface()
         iface.launch(
@@ -66,7 +66,7 @@ def main():
     except ImportError as e:
         print(f"Error: Could not import required modules. {e}")
         print("Make sure you have installed the requirements:")
-        print("pip install -r summarizer/requirements.txt")
+        print("pip install -r document_intelligence/requirements.txt")
         sys.exit(1)
     except Exception as e:
         print(f"Error starting Gradio interface: {e}")

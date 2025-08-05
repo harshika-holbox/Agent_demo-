@@ -1,6 +1,6 @@
-agentName: "MultiFormatSummarizerAgent"
-agentDescription: "An intelligent document summarization agent that creates concise, accurate summaries from PDFs, images, Word docs, Excel files, and text content using advanced AI models and OCR technology"
-agentInstruction: "You are a helpful document summarization assistant. When users provide text content or upload documents (PDFs, images, Word docs, Excel files, etc.), analyze the content carefully and create a clear, concise summary that captures the main points and key information. For images, use OCR to extract text first, then summarize. Focus on accuracy and readability while maintaining the essential meaning of the original content."
+agentName: "DocumentIntelligenceAgent"
+agentDescription: "An advanced document intelligence agent that can understand, analyze, and interact with documents in multiple formats. Capable of summarization, Q&A, entity extraction, translation, classification, sentiment analysis, and more using AWS Agent Core and Claude 3 Sonnet."
+agentInstruction: "You are an intelligent document processing assistant with multiple capabilities. When users provide documents or text, you can: 1) Summarize content intelligently, 2) Answer questions about documents, 3) Extract entities (people, organizations, dates), 4) Translate content, 5) Classify document types, 6) Extract insights and patterns, 7) Analyze sentiment, 8) Find action items and deadlines, 9) Search for specific information. Always explain your reasoning and provide confidence levels for your analysis. Maintain context across interactions and adapt your approach based on user queries."
 
 foundationModel:
   modelId: "anthropic.claude-3-sonnet-20240229-v1:0"
@@ -11,19 +11,19 @@ foundationModel:
 
 actionGroups:
   - actionGroupName: "summarizeText"
-    actionGroupExecutor: "arn:aws:lambda:REGION:ACCOUNT_ID:function:summarizer_function"
+    actionGroupExecutor: "arn:aws:lambda:REGION:ACCOUNT_ID:function:document_intelligence_function"
     apiSchema:
       openAPISchema:
         openapi: 3.0.1
         info:
-          title: "Multi-Format Document Summarization API"
-          version: "2.0"
-          description: "API for summarizing text content and documents (PDFs, images, Word docs, Excel files) using AI models and OCR"
+          title: "Document Intelligence Agent API"
+          version: "3.0"
+          description: "Advanced API for document intelligence including summarization, Q&A, entity extraction, translation, classification, and more using AWS Agent Core"
         paths:
-          /summarize:
+          /process:
             post:
-              summary: "Summarize text content or documents"
-              description: "Takes input text or file content and returns a concise summary"
+              summary: "Process documents with intelligent agent capabilities"
+              description: "Takes input text or file content and user query, returns intelligent analysis based on agent decision-making"
               requestBody:
                 required: true
                 content:
@@ -33,7 +33,7 @@ actionGroups:
                       properties:
                         input:
                           type: string
-                          description: "The text content to be summarized"
+                          description: "The text content to be processed"
                           minLength: 1
                           maxLength: 10000
                         file_content:
@@ -42,9 +42,14 @@ actionGroups:
                         filename:
                           type: string
                           description: "Name of the uploaded file"
+                        user_query:
+                          type: string
+                          description: "User query or instruction for the agent"
+                          minLength: 1
+                          maxLength: 1000
                       anyOf:
-                        - required: ["input"]
-                        - required: ["file_content", "filename"]
+                        - required: ["input", "user_query"]
+                        - required: ["file_content", "filename", "user_query"]
               responses:
                 '200':
                   description: "Successful summarization"
@@ -53,18 +58,27 @@ actionGroups:
                       schema:
                         type: object
                         properties:
-                          summary:
+                          agent_response:
                             type: string
-                            description: "The generated summary"
+                            description: "The agent's intelligent response"
                           source:
                             type: string
                             description: "Source of the input (text or file info)"
+                          user_query:
+                            type: string
+                            description: "The user's original query"
+                          agent_action:
+                            type: string
+                            description: "Action chosen by the agent"
+                          confidence:
+                            type: number
+                            description: "Agent's confidence in the analysis"
+                          reasoning:
+                            type: string
+                            description: "Agent's reasoning for the chosen action"
                           input_length:
                             type: integer
                             description: "Length of input text"
-                          summary_length:
-                            type: integer
-                            description: "Length of generated summary"
                 '400':
                   description: "Bad request - invalid input"
                 '500':
@@ -76,11 +90,16 @@ agentMetadata:
   author: "Your Name"
   category: "Productivity"
   tags:
-    - "summarization"
+    - "document-intelligence"
+    - "ai-agent"
     - "document-processing"
     - "ocr"
     - "pdf-processing"
     - "image-processing"
+    - "qa"
+    - "translation"
+    - "entity-extraction"
+    - "sentiment-analysis"
     - "ai"
     - "productivity"
   pricing:

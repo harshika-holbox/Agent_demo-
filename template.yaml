@@ -22,11 +22,11 @@ Globals:
         LOG_LEVEL: INFO
 
 Resources:
-  SummarizerFunction:
+  DocumentIntelligenceFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: summarizer_function
-      CodeUri: summarizer/
+      FunctionName: document_intelligence_function
+      CodeUri: document_intelligence/
       Handler: app.lambda_handler
       Policies:
         - BedrockInvokeModelPolicy:
@@ -35,11 +35,11 @@ Resources:
         ApiEvent:
           Type: Api
           Properties:
-            Path: /summarize
+            Path: /process
             Method: post
 
   # IAM Role for the function
-  SummarizerFunctionRole:
+  DocumentIntelligenceFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -64,20 +64,20 @@ Resources:
                   - !Sub "arn:aws:bedrock:${Region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
 
 Outputs:
-  SummarizerFunctionArn:
-    Description: ARN of the Summarizer Lambda Function
-    Value: !GetAtt SummarizerFunction.Arn
+  DocumentIntelligenceFunctionArn:
+    Description: ARN of the Document Intelligence Lambda Function
+    Value: !GetAtt DocumentIntelligenceFunction.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-SummarizerFunctionArn"
+      Name: !Sub "${AWS::StackName}-DocumentIntelligenceFunctionArn"
   
-  SummarizerFunctionName:
-    Description: Name of the Summarizer Lambda Function
-    Value: !Ref SummarizerFunction
+  DocumentIntelligenceFunctionName:
+    Description: Name of the Document Intelligence Lambda Function
+    Value: !Ref DocumentIntelligenceFunction
     Export:
-      Name: !Sub "${AWS::StackName}-SummarizerFunctionName"
+      Name: !Sub "${AWS::StackName}-DocumentIntelligenceFunctionName"
   
   ApiEndpoint:
     Description: API Gateway endpoint URL
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/summarize"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/process"
     Export:
       Name: !Sub "${AWS::StackName}-ApiEndpoint" 

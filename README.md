@@ -1,14 +1,16 @@
-# Multi-Format Document Summarization Agent for AWS Agent Marketplace
+# 🤖 Document Intelligence Agent for AWS Agent Marketplace
 
-A comprehensive document summarization agent built with AWS AgentCore that creates concise summaries from PDFs, images, Word docs, Excel files, and text content using Amazon Bedrock, Claude 3 Sonnet, and OCR technology.
+An advanced document intelligence agent built with AWS AgentCore that can understand, analyze, and interact with documents in multiple formats. Capable of summarization, Q&A, entity extraction, translation, classification, sentiment analysis, and more using AWS Agent Core and Claude 3 Sonnet.
 
 ## What's Been Done
 
 ### **Core Implementation:**
-- **Lambda Function** (`summarizer/app.py`) - Working summarization logic with multi-format support
-- **Document Processor** (`summarizer/document_processor.py`) - Handles PDFs, images, Word docs, Excel files
+- **Document Intelligence Agent** (`document_intelligence/agent_intelligence.py`) - Advanced agent with multiple capabilities
+- **Lambda Function** (`document_intelligence/app.py`) - Intelligent agent interface with decision-making
+- **Document Processor** (`document_intelligence/document_processor.py`) - Handles PDFs, images, Word docs, Excel files
 - **OCR Integration** - Image text extraction using Tesseract
 - **AWS Bedrock Integration** - Connected to Claude 3 Sonnet
+- **Agent Decision Making** - Automatic intent analysis and action selection
 - **Environment Setup** (`.env`) - AWS credentials configured
 - **Local Testing** - Function tested and working
 - **Error Handling** - Input validation and error responses
@@ -19,26 +21,30 @@ A comprehensive document summarization agent built with AWS AgentCore that creat
 - **Dependencies** (`requirements.txt`) - Python packages defined
 
 ### **Testing Results:**
-- **Main Function** - Successfully generates summaries from text and files
-- **PDF Processing** - Extracts and summarizes PDF documents
-- **Image OCR** - Extracts text from images and summarizes
-- **Office Documents** - Processes Word and Excel files
-- **Empty Input** - Properly handles empty requests
+- **Agent Intelligence** - Successfully analyzes user intent and chooses appropriate actions
+- **Multi-Modal Processing** - Handles text, PDFs, images, Word docs, Excel files
+- **Document Q&A** - Answers questions about document content
+- **Entity Extraction** - Finds people, organizations, dates, locations
+- **Document Translation** - Translates content to multiple languages
+- **Document Classification** - Automatically categorizes document types
+- **Sentiment Analysis** - Analyzes document tone and sentiment
+- **Action Item Extraction** - Finds tasks, deadlines, and responsibilities
 - **Large Input** - Processes 25,000+ character texts
 - **Error Cases** - Validates input and returns proper errors
 
 ## Project Structure
 
 ```
-SUMMARIZATION_AGENT/
+DOCUMENT_INTELLIGENCE_AGENT/
 ├── .env                          # AWS credentials (configured)
 ├── agent-config.yaml             # AgentCore config (ready)
 ├── template.yaml                 # SAM deployment template
-├── deploy.sh                     # Deployment script
+├── deploy.py                     # Python deployment script
 ├── run_gradio.py                 # Gradio interface launcher
 ├── test_function.py              # Test script (working)
-└── summarizer/
+└── document_intelligence/
     ├── app.py                    # Lambda function + Gradio interface
+    ├── agent_intelligence.py     # Advanced document intelligence agent
     ├── document_processor.py     # Multi-format document processor
     └── requirements.txt          # Dependencies
 ```
@@ -48,7 +54,7 @@ SUMMARIZATION_AGENT/
 ### **1. Test with Gradio Interface (Local Testing)**
 ```bash
 # Install Python dependencies
-pip install -r summarizer/requirements.txt
+pip install -r document_intelligence/requirements.txt
 
 # Install Tesseract OCR (required for image text extraction)
 # macOS: brew install tesseract
@@ -74,10 +80,20 @@ The Gradio interface will be available at: http://localhost:7860
 - **Data Files**: .csv
 - **Text Files**: .txt, .md, .rtf
 
+**Agent Capabilities:**
+- **Smart Summarization**: Intelligent document summaries
+- **Document Q&A**: Ask questions about your documents
+- **Entity Extraction**: Find people, organizations, dates, locations
+- **Document Translation**: Translate content to multiple languages
+- **Document Classification**: Automatically categorize documents
+- **Insight Extraction**: Find key insights and patterns
+- **Sentiment Analysis**: Analyze document tone and sentiment
+- **Action Item Extraction**: Find tasks, deadlines, and responsibilities
+- **Information Search**: Find specific information in documents
+
 ### **2. Deploy to AWS (Production)**
 ```bash
-chmod +x deploy.sh
-./deploy.sh
+python3 deploy.py
 ```
 
 ### **2. Update Configuration**
