@@ -8,7 +8,6 @@ import subprocess
 import sys
 import os
 import json
-import re
 
 def run_command(command, description):
     """Run a command and handle errors"""
@@ -119,7 +118,7 @@ def show_deployment_summary():
     print("🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!")
     print("="*60)
     
-            print("\nDeployment Summary:")
+    print("\nDeployment Summary:")
     print("   - Lambda Function: document_intelligence_function")
     print("   - API Gateway: Created automatically")
     print("   - IAM Roles: Created with minimal permissions")
@@ -158,7 +157,7 @@ def main():
     if not region:
         sys.exit(1)
     
-            print(f"\nDeployment Configuration:")
+    print(f"\nDeployment Configuration:")
     print(f"   Account ID: {account_id}")
     print(f"   Region: {region}")
     

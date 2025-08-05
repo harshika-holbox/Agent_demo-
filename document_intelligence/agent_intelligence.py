@@ -1,6 +1,5 @@
 import json
-import re
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, Any
 from enum import Enum
 import boto3
 import os
@@ -204,87 +203,6 @@ class DocumentIntelligenceAgent:
                 "confidence": 0.7,
                 "reasoning": "User asking a general question about the document",
                 "parameters": {"question": user_query},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['action item', 'task', 'todo', 'deadline', 'responsibility']):
-            print(f"Detected: EXTRACT_ACTION_ITEMS")
-            return {
-                "action": "extract_action_items",
-                "confidence": 0.7,
-                "reasoning": "User wants action items and tasks",
-                "parameters": {},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['who', 'person', 'people', 'organization', 'company']):
-            print(f"Detected: EXTRACT_ENTITIES")
-            return {
-                "action": "extract_entities",
-                "confidence": 0.7,
-                "reasoning": "User asking about people or organizations",
-                "parameters": {"entity_types": ["PERSON", "ORGANIZATION"]},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['translate', 'spanish', 'french', 'german', 'chinese', 'japanese']):
-            print(f"Detected: TRANSLATE")
-            target_lang = "Spanish"
-            if "french" in query_lower:
-                target_lang = "French"
-            elif "german" in query_lower:
-                target_lang = "German"
-            elif "chinese" in query_lower:
-                target_lang = "Chinese"
-            elif "japanese" in query_lower:
-                target_lang = "Japanese"
-            return {
-                "action": "translate",
-                "confidence": 0.8,
-                "reasoning": f"User requested translation to {target_lang}",
-                "parameters": {"target_language": target_lang},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['classify', 'type', 'category', 'what kind']):
-            print(f"Detected: CLASSIFY")
-            return {
-                "action": "classify",
-                "confidence": 0.7,
-                "reasoning": "User wants to classify the document type",
-                "parameters": {},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['insight', 'pattern', 'trend', 'key finding']):
-            print(f"Detected: EXTRACT_INSIGHTS")
-            return {
-                "action": "extract_insights",
-                "confidence": 0.7,
-                "reasoning": "User wants key insights and patterns",
-                "parameters": {},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['sentiment', 'tone', 'emotion', 'mood']):
-            print(f"Detected: ANALYZE_SENTIMENT")
-            return {
-                "action": "analyze_sentiment",
-                "confidence": 0.7,
-                "reasoning": "User wants sentiment analysis",
-                "parameters": {},
-                "requires_multiple_docs": False
-            }
-        elif any(word in query_lower for word in ['compare', 'difference', 'similar', 'versus']):
-            print(f"Detected: COMPARE_DOCUMENTS")
-            return {
-                "action": "compare_documents",
-                "confidence": 0.7,
-                "reasoning": "User wants to compare documents",
-                "parameters": {},
-                "requires_multiple_docs": True
-            }
-        elif any(word in query_lower for word in ['summarize', 'summary', 'summarize']):
-            print(f"Detected: SUMMARIZE")
-            return {
-                "action": "summarize",
-                "confidence": 0.8,
-                "reasoning": "User requested summarization",
-                "parameters": {},
                 "requires_multiple_docs": False
             }
         else:

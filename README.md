@@ -71,9 +71,14 @@ Most document tools are single-purpose. This agent provides:
 ## 🏗️ Technical Architecture
 
 ### **Framework: AWS Agent Core**
-- **Purpose**: AWS's official framework for building intelligent agents
+- **Purpose**: AWS's official framework for building intelligent agents for the AWS Agent Marketplace
 - **Benefits**: Enterprise-grade scalability, security, and integration
-- **Components**: Agent configuration, action groups, API schemas, marketplace integration
+- **Components**: 
+  - **Agent Configuration**: Defines agent behavior, capabilities, and instructions
+  - **Action Groups**: Modular functions that the agent can execute
+  - **API Schema**: OpenAPI specification for agent interactions
+  - **Marketplace Integration**: Deployment and discovery through AWS Agent Marketplace
+  - **Agent Management**: Lifecycle management, versioning, and monitoring
 
 ### **Core Technologies**
 
@@ -106,23 +111,33 @@ Most document tools are single-purpose. This agent provides:
 ### **System Architecture**
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Gradio UI     │    │  AWS Lambda     │    │  AWS Bedrock    │
-│                 │    │                 │    │                 │
-│ • File Upload   │───▶│ • Intent        │───▶│ • Claude 3      │
-│ • Query Input   │    │   Analysis      │    │   Sonnet        │
-│ • Response      │    │ • Action        │    │ • Document      │
-│   Display       │    │   Execution     │    │   Processing    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       ▼                       │
-         │              ┌─────────────────┐              │
-         │              │ Document        │              │
-         └──────────────▶│ Processor       │◀─────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Gradio UI     │    │  AWS Agent Core │    │  AWS Lambda     │    │  AWS Bedrock    │
+│                 │    │                 │    │                 │    │                 │
+│ • File Upload   │───▶│ • Agent         │───▶│ • Intent        │───▶│ • Claude 3      │
+│ • Query Input   │    │   Configuration │    │   Analysis      │    │   Sonnet        │
+│ • Response      │    │ • Action Groups │    │ • Action        │    │ • Document      │
+│   Display       │    │ • API Schema    │    │   Execution     │    │   Processing    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │                       │
+         │                       │                       ▼                       │
+         │                       │              ┌─────────────────┐              │
+         │                       │              │ Document        │              │
+         └───────────────────────┼──────────────▶│ Processor       │◀─────────────┘
+                                 │              │                 │
+                                 │              │ • PDF/Image     │
+                                 │              │ • Word/Excel    │
+                                 │              │ • OCR Support   │
+                                 │              └─────────────────┘
+                                 │
+                                 ▼
+                        ┌─────────────────┐
+                        │ AWS Marketplace │
                         │                 │
-                        │ • PDF/Image     │
-                        │ • Word/Excel    │
-                        │ • OCR Support   │
+                        │ • Agent         │
+                        │   Discovery     │
+                        │ • Integration   │
+                        │ • Management    │
                         └─────────────────┘
 ```
 

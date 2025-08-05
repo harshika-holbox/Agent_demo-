@@ -1,8 +1,6 @@
 import os
 import io
-import base64
-import requests
-from typing import Optional, Tuple, List
+from typing import Tuple
 import PyPDF2
 import pdfplumber
 from PIL import Image
@@ -10,7 +8,6 @@ import pytesseract
 from docx import Document
 import openpyxl
 import pandas as pd
-import json
 
 class DocumentProcessor:
     """
