@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Document Intelligence Agent Deployment Script
+Document Intelligence Agent with CrewAI Multi-Agent System Deployment Script
 This script automates the deployment of the document intelligence agent to AWS
 """
 
@@ -120,6 +120,7 @@ def show_deployment_summary():
     
     print("\nDeployment Summary:")
     print("   - Lambda Function: document_intelligence_function")
+    print("   - CrewAI Multi-Agent System: Integrated")
     print("   - API Gateway: Created automatically")
     print("   - IAM Roles: Created with minimal permissions")
     
@@ -139,8 +140,8 @@ def show_deployment_summary():
 
 def main():
     """Main deployment function"""
-    print("Document Intelligence Agent Deployment")
-    print("="*50)
+    print("Document Intelligence Agent with CrewAI Multi-Agent System Deployment")
+    print("="*70)
     
     # Check prerequisites
     if not check_aws_cli():

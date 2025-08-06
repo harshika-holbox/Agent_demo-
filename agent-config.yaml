@@ -1,6 +1,6 @@
-agentName: "DocumentIntelligenceAgent"
-agentDescription: "An advanced document intelligence agent that can understand, analyze, and interact with documents in multiple formats. Capable of summarization, Q&A, entity extraction, translation, classification, sentiment analysis, and more using AWS Agent Core and Claude 3 Sonnet."
-agentInstruction: "You are an intelligent document processing assistant with multiple capabilities. When users provide documents or text, you can: 1) Summarize content intelligently, 2) Answer questions about documents, 3) Extract entities (people, organizations, dates), 4) Translate content, 5) Classify document types, 6) Extract insights and patterns, 7) Analyze sentiment, 8) Find action items and deadlines, 9) Search for specific information. Always explain your reasoning and provide confidence levels for your analysis. Maintain context across interactions and adapt your approach based on user queries."
+agentName: "DocumentIntelligenceCrew"
+agentDescription: "An advanced document intelligence system using CrewAI multi-agent architecture that can understand, analyze, and interact with documents in multiple formats. Capable of summarization, Q&A, entity extraction, translation, classification, sentiment analysis, and more using AWS Agent Core, Claude 3 Sonnet, and specialized agent teams."
+agentInstruction: "You are a sophisticated multi-agent document processing system with specialized capabilities. When users provide documents or text, you can: 1) Summarize content intelligently (simple or comprehensive), 2) Answer questions about documents, 3) Extract entities (people, organizations, dates), 4) Translate content, 5) Classify document types, 6) Extract insights and patterns, 7) Analyze sentiment, 8) Find action items and deadlines, 9) Search for specific information. The system automatically detects query complexity and chooses the optimal processing approach using specialized agents. Always provide comprehensive analysis with context and reasoning."
 
 foundationModel:
   modelId: "anthropic.claude-3-sonnet-20240229-v1:0"
@@ -10,20 +10,20 @@ foundationModel:
     top_p: 0.9
 
 actionGroups:
-  - actionGroupName: "summarizeText"
+  - actionGroupName: "documentIntelligence"
     actionGroupExecutor: "arn:aws:lambda:REGION:ACCOUNT_ID:function:document_intelligence_function"
     apiSchema:
       openAPISchema:
         openapi: 3.0.1
         info:
-          title: "Document Intelligence Agent API"
+          title: "Document Intelligence CrewAI API"
           version: "3.0"
-          description: "Advanced API for document intelligence including summarization, Q&A, entity extraction, translation, classification, and more using AWS Agent Core"
+          description: "Advanced API for document intelligence using CrewAI multi-agent system including summarization, Q&A, entity extraction, translation, classification, and more using AWS Agent Core"
         paths:
           /process:
             post:
-              summary: "Process documents with intelligent agent capabilities"
-              description: "Takes input text or file content and user query, returns intelligent analysis based on agent decision-making"
+              summary: "Process documents with CrewAI multi-agent capabilities"
+              description: "Takes input text or file content and user query, returns intelligent analysis based on multi-agent collaboration and smart complexity detection"
               requestBody:
                 required: true
                 content:
@@ -44,7 +44,7 @@ actionGroups:
                           description: "Name of the uploaded file"
                         user_query:
                           type: string
-                          description: "User query or instruction for the agent"
+                          description: "User query or instruction for the multi-agent system"
                           minLength: 1
                           maxLength: 1000
                       anyOf:
@@ -52,7 +52,7 @@ actionGroups:
                         - required: ["file_content", "filename", "user_query"]
               responses:
                 '200':
-                  description: "Successful summarization"
+                  description: "Successful processing"
                   content:
                     application/json:
                       schema:
@@ -60,22 +60,25 @@ actionGroups:
                         properties:
                           agent_response:
                             type: string
-                            description: "The agent's intelligent response"
+                            description: "The multi-agent system's intelligent response"
                           source:
                             type: string
                             description: "Source of the input (text or file info)"
                           user_query:
                             type: string
                             description: "The user's original query"
-                          agent_action:
+                          agent_type:
                             type: string
-                            description: "Action chosen by the agent"
-                          confidence:
-                            type: number
-                            description: "Agent's confidence in the analysis"
-                          reasoning:
+                            description: "Type of agent system used"
+                          agents_used:
+                            type: array
+                            description: "List of agents that participated in processing"
+                          crew_type:
                             type: string
-                            description: "Agent's reasoning for the chosen action"
+                            description: "Type of crew processing performed"
+                          complexity:
+                            type: string
+                            description: "Detected complexity level of the query"
                           input_length:
                             type: integer
                             description: "Length of input text"
@@ -87,7 +90,7 @@ actionGroups:
 # Agent metadata for marketplace
 agentMetadata:
   version: "1.0.0"
-  author: "Your Name"
+  author: "Harshika Agarwal"
   category: "Productivity"
   tags:
     - "document-intelligence"

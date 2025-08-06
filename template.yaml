@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Summarization Agent Lambda Function
+Description: Document Intelligence Agent Lambda Function with CrewAI Multi-Agent System
 
 Parameters:
   Region:

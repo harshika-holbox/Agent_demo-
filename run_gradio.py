@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Launcher script for the AWS Agent Core Summarizer Gradio interface
+Launcher script for the AWS Agent Core Document Intelligence Agent Gradio interface
 """
 
 import os
@@ -39,7 +39,7 @@ def check_aws_credentials():
 def main():
     """Main function to launch the Gradio interface"""
     print("=" * 60)
-    print("AWS Agent Core - Text Summarizer")
+    print("AWS Agent Core - Document Intelligence Agent")
     print("Gradio Web Interface")
     print("=" * 60)
     

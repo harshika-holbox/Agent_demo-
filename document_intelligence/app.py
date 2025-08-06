@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import gradio as gr
 from document_processor import DocumentProcessor
-from agent_intelligence import DocumentIntelligenceAgent
+from crewai_agent_system import DocumentIntelligenceCrew
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,7 +22,7 @@ def lambda_handler(event, context):
         
         # Initialize document processor and agent
         doc_processor = DocumentProcessor()
-        agent = DocumentIntelligenceAgent()
+        agent = DocumentIntelligenceCrew()
         
         # Determine input source
         if file_content and filename:
@@ -53,17 +53,12 @@ def lambda_handler(event, context):
         # Process with intelligent agent
         result = agent.process_query(user_query, document_content, filename if filename else "text_input")
         
-        # Extract the main response
-        action_result = result['action_result']
-        main_response = action_result.get('result', 
-                                        action_result.get('answer', 
-                                        action_result.get('insights', 
-                                        action_result.get('classification', 
-                                        action_result.get('translation', 
-                                        action_result.get('sentiment_analysis', 
-                                        action_result.get('action_items', 
-                                        action_result.get('entities', 
-                                        action_result.get('analysis', 'No response generated')))))))))
+        # Extract the main response (CrewAI format, handle CrewOutput objects)
+        main_response = getattr(result['result'], 'raw', str(result['result']))
+        agent_type = "CrewAI Multi-Agent System"
+        agents_used = result.get('agents_used', [])
+        crew_type = result.get('crew_type', 'unknown')
+        complexity = result.get('complexity', 'unknown')
         
         return {
             "statusCode": 200,
@@ -71,9 +66,10 @@ def lambda_handler(event, context):
                 "agent_response": main_response,
                 "source": source_info,
                 "user_query": user_query,
-                "agent_action": result['intent_analysis']['action'],
-                "confidence": result['intent_analysis']['confidence'],
-                "reasoning": result['agent_reasoning'],
+                "agent_type": agent_type,
+                "agents_used": agents_used,
+                "crew_type": crew_type,
+                "complexity": complexity,
                 "input_length": len(document_content)
             })
         }
@@ -86,12 +82,13 @@ def lambda_handler(event, context):
 
 def intelligent_document_agent(input_text, uploaded_file, user_query):
     """
-    Advanced Document Intelligence Agent interface
+    Advanced Document Intelligence Agent interface using CrewAI
     """
     try:
         # Initialize document processor and agent
         doc_processor = DocumentProcessor()
-        agent = DocumentIntelligenceAgent()
+        agent = DocumentIntelligenceCrew()
+        agent_type = "CrewAI Multi-Agent System"
         
         # Determine input source
         if uploaded_file is not None:
@@ -149,62 +146,15 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
                 
             # Debug: Print the full result structure
             print(f"Debug - Full result: {result}")
-            print(f"Debug - Action result: {result.get('action_result', {})}")
             
-            # Extract the main result from action_result
-            action_result = result.get('action_result', {})
-            action_type = result['intent_analysis']['action']
-                
-            # Get the appropriate result based on action type
-            if action_type == "summarize":
-                main_result = action_result.get('result', 'No summary generated')
-                result_title = "Summary"
-            elif action_type == "answer_question":
-                main_result = action_result.get('answer', 'No answer generated')
-                result_title = "Answer"
-            elif action_type == "extract_entities":
-                entities = action_result.get('entities', {})
-                if isinstance(entities, dict):
-                    main_result = "\n".join([f"**{k.title()}:** {', '.join(v) if isinstance(v, list) else str(v)}" for k, v in entities.items()])
-                else:
-                    main_result = str(entities)
-                result_title = "Extracted Entities"
-            elif action_type == "translate":
-                main_result = action_result.get('translation', 'No translation generated')
-                result_title = f"Translation ({action_result.get('target_language', 'Unknown')})"
-            elif action_type == "classify":
-                main_result = action_result.get('classification', 'No classification generated')
-                result_title = "Document Classification"
-            elif action_type == "extract_insights":
-                main_result = action_result.get('insights', 'No insights generated')
-                result_title = "Key Insights"
-            elif action_type == "analyze_sentiment":
-                main_result = action_result.get('sentiment_analysis', 'No sentiment analysis generated')
-                result_title = "Sentiment Analysis"
-            elif action_type == "extract_action_items":
-                main_result = action_result.get('action_items', 'No action items found')
-                result_title = "Action Items"
-            elif action_type == "compare_documents":
-                main_result = action_result.get('analysis', 'No comparison analysis generated')
-                result_title = "Document Comparison"
-            elif action_type == "ask_clarification":
-                main_result = action_result.get('message', 'Please clarify what you would like me to do.')
-                result_title = "Clarification Needed"
-            else:
-                main_result = (action_result.get('result') or 
-                              action_result.get('answer') or 
-                              action_result.get('insights') or 
-                              action_result.get('classification') or 
-                              action_result.get('translation') or 
-                              action_result.get('sentiment_analysis') or 
-                              action_result.get('action_items') or 
-                              action_result.get('entities') or 
-                              action_result.get('analysis') or 
-                              action_result.get('message') or 
-                              'No results available')
-                result_title = "Results"
+            # Extract the main result (CrewAI format, handle CrewOutput objects)
+            main_result = getattr(result['result'], 'raw', str(result['result']))
+            agents_used = result.get('agents_used', [])
+            crew_type = result.get('crew_type', 'unknown')
+            complexity = result.get('complexity', 'unknown')
+            result_title = f"CrewAI {crew_type.replace('_', ' ').title()}"
             
-            print(f"Debug - Action type: {action_type}")
+            print(f"Debug - Agent type: {agent_type}")
             print(f"Debug - Main result: {main_result[:200]}...")
             
             # Format the response
@@ -213,11 +163,12 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
 
 **Source:** {source_info}
 **User Query:** {result['user_query']}
+**Agent Type:** {agent_type}
 
-### Agent Reasoning
-**Action Chosen:** {result['intent_analysis']['action'].upper()}
-**Confidence:** {result['intent_analysis']['confidence']:.2f}
-**Reasoning:** {result['agent_reasoning']}
+### Agent Information
+**Crew Type:** {crew_type.replace('_', ' ').title()}
+**Complexity:** {complexity.title()}
+**Agents Used:** {', '.join(agents_used)}
 
 ### {result_title}
 {main_result}
@@ -231,18 +182,29 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
         else:
             # Default to summarization if no specific query
             result = agent.process_query("Summarize this document", document_content)
+            
+            main_result = getattr(result['result'], 'raw', str(result['result']))
+            agents_used = result.get('agents_used', [])
+            crew_type = result.get('crew_type', 'summarization')
+            complexity = result.get('complexity', 'unknown')
+            
             response = f"""
 ## Document Intelligence Agent - Auto Summary
 
 **Source:** {source_info}
+**Agent Type:** {agent_type}
 
 ### Summary
-{result['action_result'].get('result', 'No summary generated')}
+{main_result}
+
+### Agent Information
+**Crew Type:** {crew_type.replace('_', ' ').title()}
+**Complexity:** {complexity.title()}
+**Agents Used:** {', '.join(agents_used)}
 
 ### Document Statistics
 - **Input Length:** {len(document_content)} characters
-- **Agent Action:** {result['intent_analysis']['action'].upper()}
-- **Confidence:** {result['intent_analysis']['confidence']:.2f}
+- **Agent Action:** {crew_type.upper()}
                 """
         
         return response
@@ -252,7 +214,7 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
 
 def create_gradio_interface():
     """
-    Create and launch the Gradio interface
+    Create and launch the Gradio interface with CrewAI option
     """
     # Initialize document processor for format info
     doc_processor = DocumentProcessor()
@@ -277,9 +239,9 @@ def create_gradio_interface():
             ),
             gr.Textbox(
                 label="What would you like me to do?",
-                placeholder="Ask me anything about your document! Examples: 'Summarize this', 'Who are the key people mentioned?', 'What are the main conclusions?', 'Translate to Spanish', 'Extract action items'",
+                placeholder="Ask me anything about your document!",
                 lines=2
-            )
+            ),
         ],
         outputs=[
             gr.Markdown(
@@ -287,34 +249,7 @@ def create_gradio_interface():
             )
         ],
         title="AWS Agent Core - Document Intelligence Agent",
-        description="An intelligent document processing agent that can understand your documents and answer questions, extract insights, translate content, and much more. Powered by Claude 3 Sonnet and AWS Agent Core.",
-        examples=[
-            [
-                "Artificial Intelligence (AI) has emerged as one of the most transformative technologies of the 21st century. It encompasses a wide range of capabilities including machine learning, natural language processing, computer vision, and robotics. AI systems can now perform tasks that traditionally required human intelligence, such as recognizing speech, making decisions, and solving complex problems. The applications of AI are vast and growing rapidly. In healthcare, AI is being used for disease diagnosis, drug discovery, and personalized treatment plans. In finance, it powers fraud detection, algorithmic trading, and risk assessment. In transportation, AI enables autonomous vehicles and smart traffic management systems.",
-                None,
-                "Summarize the key applications of AI mentioned in this text"
-            ],
-            [
-                "Climate change represents one of the most pressing challenges facing humanity today. The Earth's average temperature has risen by approximately 1.1 degrees Celsius since pre-industrial times, primarily due to human activities such as burning fossil fuels, deforestation, and industrial processes. This warming has led to more frequent and severe weather events, including hurricanes, droughts, heatwaves, and heavy rainfall. The consequences of climate change are far-reaching, affecting ecosystems, agriculture, water resources, and human health. Rising sea levels threaten coastal communities, while changing precipitation patterns impact food production. Addressing climate change requires global cooperation, technological innovation, and policy changes to reduce greenhouse gas emissions and adapt to changing conditions.",
-                None,
-                "What are the main causes and consequences of climate change?"
-            ],
-            [
-                "",
-                None,
-                "Who are the key people mentioned in this document?"
-            ],
-            [
-                "",
-                None,
-                "Extract all action items and deadlines"
-            ],
-            [
-                "",
-                None,
-                "Translate this document to Spanish"
-            ]
-        ],
+        description="An intelligent document processing agent that can understand your documents and answer questions, extract insights, translate content, and much more. Powered by Claude 3 Sonnet, AWS Agent Core, and CrewAI multi-agent system.",
         theme=gr.themes.Soft(),
         css="""
         .gradio-container {
@@ -327,50 +262,8 @@ def create_gradio_interface():
             padding: 20px;
             text-align: center;
         }
-        """,
-        article=f"""
-        ## 🚀 Advanced Document Intelligence Agent
-
-        This agent can understand your documents and perform multiple intelligent tasks:
-
-        ### 🧠 Agent Capabilities
-        - **Smart Summarization**: Intelligent document summaries
-        - **Document Q&A**: Ask questions about your documents
-        - **Entity Extraction**: Find people, organizations, dates, locations
-        - **Document Translation**: Translate content to multiple languages
-        - **Document Classification**: Automatically categorize documents
-        - **Insight Extraction**: Find key insights and patterns
-        - **Sentiment Analysis**: Analyze document tone and sentiment
-        - **Action Item Extraction**: Find tasks, deadlines, and responsibilities
-        - **Information Search**: Find specific information in documents
-
-        ### 📄 Supported File Formats
-        {doc_processor.get_supported_formats_info()}
-
-        ### 💡 Example Queries
-        - "Summarize this document"
-        - "Who are the key people mentioned?"
-        - "What are the main conclusions?"
-        - "Extract all action items and deadlines"
-        - "Translate this to Spanish"
-        - "What type of document is this?"
-        - "Find all dates mentioned"
-        - "What are the key insights?"
-        - "Analyze the sentiment of this document"
-        - "Compare this with other documents"
-
-        ### 🎯 Agent Intelligence
-        The agent automatically decides the best action based on your query and provides reasoning for its decisions. It can handle complex requests and maintain context across multiple interactions.
-
-        ### 🔧 Technical Features
-        - **Multi-Modal Processing**: Text, images, documents
-        - **Real-time Analysis**: Instant processing and responses
-        - **Context Awareness**: Remembers previous interactions
-        - **Confidence Scoring**: Shows how confident the agent is in its analysis
-        - **AWS Integration**: Full cloud-native architecture
         """
     )
-    
     return iface
 
 if __name__ == "__main__":
