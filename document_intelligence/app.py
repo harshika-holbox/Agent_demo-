@@ -94,25 +94,60 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
         if uploaded_file is not None:
             # Process uploaded file
             try:
-                # Handle Gradio file object format - it might be a tuple (file_path, file_name)
-                if isinstance(uploaded_file, tuple) and len(uploaded_file) >= 2:
-                    file_path = uploaded_file[0]
-                    filename = uploaded_file[1]
+                print(f"🔧 Debug - Gradio file object type: {type(uploaded_file)}")
+                print(f"🔧 Debug - Gradio file object: {uploaded_file}")
+                
+                file_content = None
+                filename = None
+                
+                # Handle different Gradio file formats
+                if isinstance(uploaded_file, str):
+                    # Gradio 3.x - file path as string
+                    file_path = uploaded_file
+                    filename = os.path.basename(file_path)
+                    print(f"📁 Reading file from path: {file_path}")
                     with open(file_path, 'rb') as f:
                         file_content = f.read()
-                elif hasattr(uploaded_file, 'read'):
-                    # Standard file-like object
-                    file_content = uploaded_file.read()
-                    filename = uploaded_file.name
-                elif hasattr(uploaded_file, 'name'):
-                    # Object with name attribute
-                    with open(uploaded_file.name, 'rb') as f:
+                        
+                elif isinstance(uploaded_file, tuple) and len(uploaded_file) >= 2:
+                    # Tuple format (file_path, filename)
+                    file_path = uploaded_file[0]
+                    filename = uploaded_file[1] if uploaded_file[1] else os.path.basename(file_path)
+                    print(f"📁 Reading file from tuple: {file_path}, name: {filename}")
+                    with open(file_path, 'rb') as f:
                         file_content = f.read()
-                    filename = uploaded_file.name
+                        
+                elif hasattr(uploaded_file, 'name') and os.path.isfile(uploaded_file.name):
+                    # File object with path
+                    file_path = uploaded_file.name
+                    filename = os.path.basename(file_path)
+                    print(f"📁 Reading file from object.name: {file_path}")
+                    with open(file_path, 'rb') as f:
+                        file_content = f.read()
+                        
+                elif hasattr(uploaded_file, 'read'):
+                    # File-like object with read method
+                    print("📁 Reading from file-like object")
+                    file_content = uploaded_file.read()
+                    filename = getattr(uploaded_file, 'name', 'uploaded_file')
+                    if hasattr(file_content, 'decode'):
+                        # If it's text, we might need to handle it differently
+                        print("⚠️  Warning: Got text content, might need binary")
+                        
                 else:
-                    # Try to get file content from the object
+                    # Last resort - try to use the object directly
+                    print(f"⚠️  Unknown file format, attempting direct use")
                     file_content = uploaded_file
                     filename = getattr(uploaded_file, 'name', 'uploaded_file')
+                
+                # Validate we got content
+                if file_content is None:
+                    return f"Error: Could not extract file content from uploaded file"
+                    
+                if not filename:
+                    filename = 'uploaded_file'
+                
+                print(f"📊 File info: {filename}, {len(file_content)} bytes")
                 
                 # Extract text from file
                 extracted_text, file_type = doc_processor.process_file(file_content, filename)
@@ -120,7 +155,11 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
                 source_info = f"File: {filename} ({file_type.upper()})"
                 
             except Exception as e:
-                return f"Error processing file: {str(e)}"
+                error_msg = f"Error processing file: {str(e)}"
+                print(f"❌ {error_msg}")
+                import traceback
+                traceback.print_exc()
+                return error_msg
         elif input_text and input_text.strip():
             # Use provided text
             document_content = input_text
@@ -128,9 +167,14 @@ def intelligent_document_agent(input_text, uploaded_file, user_query):
         else:
             return "Error: Please provide either text input or upload a file."
         
-        # Check if AWS credentials are available
-        if not os.getenv('AWS_ACCESS_KEY_ID') or not os.getenv('AWS_SECRET_ACCESS_KEY'):
-            return "Error: AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
+        # Check if AWS credentials are available using boto3 (updated from env vars)
+        try:
+            session = boto3.Session()
+            credentials = session.get_credentials()
+            if credentials is None:
+                return "Error: AWS credentials not configured. Please configure your AWS credentials using AWS CLI, environment variables, or IAM roles."
+        except Exception as e:
+            return f"Error checking AWS credentials: {str(e)}"
         
         # Test AWS Bedrock connection
         try:
@@ -226,16 +270,14 @@ def create_gradio_interface():
             gr.Textbox(
                 label="Document Content",
                 placeholder="Enter or paste your document text here...",
-                lines=6,
-                max_lines=12
+                lines=6
             ),
             gr.File(
                 label="Upload Document",
                 file_types=[
                     ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp",
                     ".docx", ".doc", ".xlsx", ".xls", ".csv", ".txt", ".md", ".rtf"
-                ],
-                file_count="single"
+                ]
             ),
             gr.Textbox(
                 label="What would you like me to do?",
@@ -249,20 +291,8 @@ def create_gradio_interface():
             )
         ],
         title="AWS Agent Core - Document Intelligence Agent",
-        description="An intelligent document processing agent that can understand your documents and answer questions, extract insights, translate content, and much more. Powered by Claude 3 Sonnet, AWS Agent Core, and CrewAI multi-agent system.",
-        theme=gr.themes.Soft(),
-        css="""
-        .gradio-container {
-            max-width: 1000px;
-            margin: auto;
-        }
-        .file-upload {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-        }
-        """
+        description="An intelligent document processing agent that can understand your documents and answer questions, extract insights, translate content, and much more. Powered by Claude 3 Sonnet, AWS Agent Core, and CrewAI multi-agent system."
+        # Removed theme and css for compatibility with Gradio 3.50.2
     )
     return iface
 

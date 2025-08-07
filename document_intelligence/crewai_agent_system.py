@@ -3,10 +3,17 @@ import json
 import boto3
 from typing import Dict, Any, List
 from crewai import Agent, Task, Crew, Process
-from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from document_processor import DocumentProcessor
-import litellm
+
+# Try to import the newer ChatBedrock from langchain-aws, fall back to langchain-community
+try:
+    from langchain_aws import ChatBedrock
+except ImportError:
+    try:
+        from langchain_community.chat_models import BedrockChat as ChatBedrock
+    except ImportError:
+        ChatBedrock = None
 
 class DocumentIntelligenceCrew:
     """
@@ -14,14 +21,25 @@ class DocumentIntelligenceCrew:
     """
     
     def __init__(self):
-        # Configure litellm for AWS Bedrock
-        litellm.set_verbose = False
-        self.bedrock_llm = litellm.completion(
-            model="bedrock/anthropic.claude-3-sonnet-20240229-v1:0",
-            messages=[{"role": "user", "content": "test"}],
-            max_tokens=10,
-            temperature=0.1
-        )
+        # Initialize AWS Bedrock LLM for CrewAI
+        try:
+            if ChatBedrock is not None:
+                self.bedrock_llm = ChatBedrock(
+                    model_id="anthropic.claude-3-sonnet-20240229-v1:0",
+                    region_name=os.getenv("AWS_DEFAULT_REGION", "us-east-1"),
+                    model_kwargs={
+                        "temperature": 0.1,
+                        "max_tokens": 4000
+                    }
+                )
+            else:
+                print(f"Warning: ChatBedrock not available, using fallback LLM")
+                self.bedrock_llm = "gpt-4"
+        except Exception as e:
+            print(f"Warning: Could not initialize ChatBedrock: {e}")
+            # Fallback to string-based LLM configuration
+            self.bedrock_llm = "gpt-4"
+        
         self.doc_processor = DocumentProcessor()
         self.agents = self._create_agents()
         
@@ -43,7 +61,7 @@ class DocumentIntelligenceCrew:
             """,
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Content Summarizer Agent
@@ -56,7 +74,7 @@ class DocumentIntelligenceCrew:
             actionable for different audiences.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Entity Extraction Agent
@@ -69,7 +87,7 @@ class DocumentIntelligenceCrew:
             precision and attention to detail ensure no important entities are missed.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Question Answering Agent
@@ -82,7 +100,7 @@ class DocumentIntelligenceCrew:
             contextually relevant, accurate responses to user questions.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Sentiment Analysis Agent
@@ -95,7 +113,7 @@ class DocumentIntelligenceCrew:
             and implications of document communication.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Translation Agent
@@ -108,7 +126,7 @@ class DocumentIntelligenceCrew:
             to different language speakers.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Action Item Extractor Agent
@@ -121,7 +139,7 @@ class DocumentIntelligenceCrew:
             needs to be done and by whom.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         # Document Classifier Agent
@@ -134,7 +152,7 @@ class DocumentIntelligenceCrew:
             and understand document collections.""",
             verbose=True,
             tools=[],
-            llm="bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            llm=self.bedrock_llm
         )
         
         return {

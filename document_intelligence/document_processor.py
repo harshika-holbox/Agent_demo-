@@ -64,20 +64,70 @@ class DocumentProcessor:
                 raise Exception(f"Failed to extract text from PDF: {str(e2)}")
     
     def extract_text_from_image(self, file_content: bytes) -> str:
-        """Extract text from image using OCR"""
+        """Extract text from image using OCR with enhanced error handling"""
         try:
-            # Open image
-            image = Image.open(io.BytesIO(file_content))
+            # Validate file content
+            if len(file_content) == 0:
+                raise Exception("Empty file content")
+            
+            print(f"Processing image: {len(file_content)} bytes")
+            
+            # Try to open image with better error handling
+            try:
+                image = Image.open(io.BytesIO(file_content))
+                print(f"Image opened successfully: {image.format}, {image.mode}, {image.size}")
+            except Exception as img_error:
+                # Try to save raw bytes for debugging
+                print(f"PIL Image.open failed: {img_error}")
+                
+                # Check if it's a valid image format by magic bytes
+                magic_bytes = file_content[:10]
+                print(f"File magic bytes: {magic_bytes}")
+                
+                # Try alternative approach - save to temp file
+                import tempfile
+                try:
+                    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                        temp_file.write(file_content)
+                        temp_file.flush()
+                        image = Image.open(temp_file.name)
+                        print(f"Image opened via temp file: {image.format}, {image.mode}, {image.size}")
+                    os.unlink(temp_file.name)  # Clean up temp file
+                except Exception as temp_error:
+                    raise Exception(f"Cannot open image file. PIL error: {img_error}, Temp file error: {temp_error}")
             
             # Convert to RGB if necessary
             if image.mode != 'RGB':
+                print(f"Converting image from {image.mode} to RGB")
                 image = image.convert('RGB')
             
-            # Extract text using OCR
-            text = pytesseract.image_to_string(image)
-            return text.strip()
+            # Check if Tesseract is available
+            try:
+                pytesseract.get_tesseract_version()
+                print(f"Tesseract available: {pytesseract.get_tesseract_version()}")
+            except Exception as tess_error:
+                raise Exception(f"Tesseract OCR not available: {tess_error}")
+            
+            # Extract text using OCR with configuration
+            print("Starting OCR text extraction...")
+            
+            # Use OCR configuration for better results
+            custom_config = r'--oem 3 --psm 6'
+            text = pytesseract.image_to_string(image, config=custom_config)
+            
+            extracted_text = text.strip()
+            print(f"OCR completed. Extracted {len(extracted_text)} characters")
+            
+            if not extracted_text:
+                print("Warning: No text extracted from image")
+                return "[No text content detected in this image]"
+            
+            return extracted_text
+            
         except Exception as e:
-            raise Exception(f"Failed to extract text from image: {str(e)}")
+            error_msg = f"Failed to extract text from image: {str(e)}"
+            print(f"Error in extract_text_from_image: {error_msg}")
+            raise Exception(error_msg)
     
     def extract_text_from_word(self, file_content: bytes) -> str:
         """Extract text from Word document"""
@@ -160,8 +210,13 @@ class DocumentProcessor:
             else:
                 raise Exception(f"Unknown file type: {file_type}")
             
+            # Special handling for images - they might not have extractable text
             if not text.strip():
-                raise Exception("No text content extracted from file")
+                if file_type == 'image':
+                    # For images, provide a descriptive message instead of failing
+                    text = f"[Image file uploaded: {filename}. This appears to be a visual/graphical image with limited text content suitable for OCR extraction. The image may contain charts, diagrams, or complex layouts that cannot be easily converted to text.]"
+                else:
+                    raise Exception("No text content extracted from file")
             
             return text, file_type
             

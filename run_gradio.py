@@ -5,6 +5,7 @@ Launcher script for the AWS Agent Core Document Intelligence Agent Gradio interf
 
 import os
 import sys
+import boto3
 from dotenv import load_dotenv
 
 # Add the document_intelligence directory to the path
@@ -14,27 +15,37 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'document_intelligence')
 load_dotenv()
 
 def check_aws_credentials():
-    """Check if AWS credentials are configured"""
-    access_key = os.getenv('AWS_ACCESS_KEY_ID')
-    secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-    
-    if not access_key or not secret_key:
-        print("Warning: AWS credentials not found!")
-        print("Please set your AWS credentials:")
-        print("1. Create a .env file in the project root with:")
-        print("   AWS_ACCESS_KEY_ID=your_access_key")
-        print("   AWS_SECRET_ACCESS_KEY=your_secret_key")
-        print("   AWS_DEFAULT_REGION=your_region")
-        print("2. Or set environment variables:")
-        print("   export AWS_ACCESS_KEY_ID=your_access_key")
-        print("   export AWS_SECRET_ACCESS_KEY=your_secret_key")
-        print("   export AWS_DEFAULT_REGION=your_region")
-        print()
+    """Check if AWS credentials are configured using boto3"""
+    try:
+        session = boto3.Session()
+        credentials = session.get_credentials()
+        
+        if credentials is None:
+            print("Warning: No AWS credentials found!")
+            print("Please configure your AWS credentials using one of these methods:")
+            print("1. AWS CLI: aws configure")
+            print("2. Environment variables:")
+            print("   export AWS_ACCESS_KEY_ID=your_access_key")
+            print("   export AWS_SECRET_ACCESS_KEY=your_secret_key")
+            print("   export AWS_DEFAULT_REGION=your_region")
+            print("3. IAM roles (if running on EC2)")
+            print("4. AWS credentials file (~/.aws/credentials)")
+            print()
+            response = input("Do you want to continue anyway? (y/n): ")
+            if response.lower() != 'y':
+                sys.exit(1)
+        else:
+            frozen_credentials = credentials.get_frozen_credentials()
+            print(f"AWS credentials found!")
+            print(f"Access Key: {frozen_credentials.access_key[:8]}...")
+            print(f"Region: {session.region_name or 'Not set'}")
+            
+    except Exception as e:
+        print(f"Error checking AWS credentials: {e}")
+        print("Please ensure AWS credentials are properly configured.")
         response = input("Do you want to continue anyway? (y/n): ")
         if response.lower() != 'y':
             sys.exit(1)
-    else:
-        print("AWS credentials found!")
 
 def main():
     """Main function to launch the Gradio interface"""
