@@ -1,0 +1,81 @@
+# Version control
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test files
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/
+*.md
+README*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Environment files (will be set via container environment)
+.env
+.env.*
+
+# Docker files (not needed inside container)
+Dockerfile*
+docker-compose*.yml
+
+# CloudFormation and deployment files
+*.yaml
+*.yml
+deploy.py
+
+# Development tools
+.pre-commit-config.yaml
+.flake8
+.mypy.ini
+pyproject.toml
+setup.py
+setup.cfg
