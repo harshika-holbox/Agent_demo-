@@ -111,7 +111,7 @@ def build_and_push_image(ecr_uri, region):
     
     # Build image
     print("🏗️ Building Docker image...")
-    build_cmd = f"docker build -t crewai-document-agent ."
+    build_cmd = f"docker buildx build --platform linux/amd64 -t crewai-document-agent -f ../Dockerfile .."
     run_command(build_cmd, "Building Docker image", capture_output=False)
     
     # Tag image
@@ -126,7 +126,7 @@ def build_and_push_image(ecr_uri, region):
     print("✅ Docker image built and pushed successfully")
     return f"{ecr_uri}:latest"
 
-def deploy_infrastructure(account_id, region, image_uri, stack_name="crewai-document-agent"):
+def deploy_infrastructure(region, image_uri, stack_name="crewai-document-agent"):
     """Deploy CloudFormation stack"""
     print(f"🚀 Deploying infrastructure stack: {stack_name}...")
     
@@ -271,15 +271,10 @@ def main():
     """Main deployment function"""
     print("CrewAI Document Intelligence Agent - ECS Fargate Deployment")
     print("="*70)
-    
-    # Check prerequisites
-    if not check_prerequisites():
-        sys.exit(1)
-    
-    # Get AWS info
+
     account_id, region = get_aws_info()
     
-    # Configuration
+    # # Configuration
     stack_name = "crewai-document-agent"
     repo_name = "crewai-document-agent"
     
@@ -289,21 +284,15 @@ def main():
     print(f"   Region: {region}")
     print(f"   Account: {account_id}")
     
-    # Confirm deployment
-    response = input(f"\n❓ Proceed with deployment? (y/N): ")
-    if response.lower() != 'y':
-        print("❌ Deployment cancelled")
-        sys.exit(0)
-    
     try:
         # Step 1: Create ECR repository
         ecr_uri = create_ecr_repository(account_id, region, repo_name)
         
         # Step 2: Build and push Docker image
         image_uri = build_and_push_image(ecr_uri, region)
-        
+        # print(image_uri)
         # Step 3: Deploy infrastructure
-        deploy_infrastructure(account_id, region, image_uri, stack_name)
+        deploy_infrastructure(region, image_uri, stack_name)
         
         # Step 4: Get outputs
         outputs = get_outputs(stack_name, region)

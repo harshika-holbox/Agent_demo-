@@ -11,7 +11,7 @@ Parameters:
   ImageURI:
     Type: String
     Description: ECR Image URI for the CrewAI agent
-    Default: "your-account.dkr.ecr.us-east-1.amazonaws.com/crewai-document-agent:latest"
+    Default: "992382417943.dkr.ecr.us-east-1.amazonaws.com/crewai-document-agent:latest"
   
   DomainName:
     Type: String
@@ -252,6 +252,8 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
       Policies:
         - PolicyName: BedrockAccess
           PolicyDocument:
@@ -272,7 +274,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource: 
-                  - !Sub "${DocumentStorageBucket}/*"
+                  - !Sub "arn:aws:s3:::${DocumentStorageBucket}/*"
 
   # S3 Bucket for document storage
   DocumentStorageBucket:
@@ -386,7 +388,7 @@ Resources:
               Service: application-autoscaling.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/ApplicationAutoScalingECSServicePolicy
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole
 
   # Auto Scaling
   ServiceScalingTarget:
