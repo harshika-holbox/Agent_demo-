@@ -31,9 +31,6 @@ pytesseract==0.3.10
 pandas==2.1.4
 numpy>=1.24.0
 
-# Web Interface
-gradio==3.41.2
-
 # HTTP and Network
 requests==2.31.0
 httpx>=0.25.0
@@ -42,3 +39,8 @@ httpx>=0.25.0
 typing-extensions>=4.8.0
 python-magic>=0.4.27
 chardet>=5.2.0
+
+langchain-aws==0.1.2
+langchain-core==0.1.53
+langsmith==0.1.147
+pydantic==2.5.0

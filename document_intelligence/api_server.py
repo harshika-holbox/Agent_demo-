@@ -17,15 +17,20 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
+import boto3
+from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Import with error handling
 try:
-    from app import intelligent_document_agent, create_gradio_interface
     from document_processor import DocumentProcessor
     from crewai_agent_system import DocumentIntelligenceCrew
 except ImportError as e:
     print(f"Warning: Could not import some modules: {e}")
     # We'll handle this gracefully in initialization
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,11 +39,10 @@ logger = logging.getLogger(__name__)
 # Global instances (initialized once)
 doc_processor = None
 crew_agent = None
-gradio_interface = None
 
 def initialize_components():
     """Initialize document processor and agent system"""
-    global doc_processor, crew_agent, gradio_interface
+    global doc_processor, crew_agent
     
     try:
         if doc_processor is None:
@@ -48,10 +52,6 @@ def initialize_components():
         if crew_agent is None:
             logger.info("Initializing CrewAI agent system...")
             crew_agent = DocumentIntelligenceCrew()
-        
-        if gradio_interface is None:
-            logger.info("Initializing Gradio interface...")
-            gradio_interface = create_gradio_interface()
             
         logger.info("✅ All components initialized successfully")
         
@@ -86,7 +86,7 @@ class DocumentProcessRequest(BaseModel):
     user_query: str = Field(..., min_length=1, max_length=1000, description="Query or instruction for the agent")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "input_text": "This is a sample document text to analyze...",
                 "user_query": "Summarize the key points and extract any action items"
@@ -111,7 +111,7 @@ class DocumentProcessResponse(BaseModel):
     timestamp: str = Field(..., description="Processing timestamp")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "status": "success",
                 "agent_response": "Based on my analysis of the document, here are the key findings...",
@@ -135,17 +135,125 @@ class HealthResponse(BaseModel):
     version: str
     components: Dict[str, str]
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Initialize components on startup"""
+async def process_document_service(
+    input_text: Optional[str] = None,
+    file_content: Optional[bytes] = None,
+    filename: Optional[str] = None,
+    user_query: str = ""
+) -> DocumentProcessResponse:
+    """Shared service for document processing"""
+    start_time = datetime.utcnow()
+    
+    # Initialize components if not already done
+    if not doc_processor or not crew_agent:
+        initialize_components()
+    
+    # Validate input
+    if not user_query:
+        raise HTTPException(status_code=400, detail="user_query is required")
+    
+    if not input_text and not (file_content and filename):
+        raise HTTPException(status_code=400, detail="Either input_text or (file_content + filename) must be provided")
+    
+    if input_text:
+        validate_text_length(input_text)
+    
+    if file_content:
+        validate_file_size(len(file_content))
+
+    document_content = input_text
+    source_info = "Direct text input"
+    filename_for_agent = "text_input"
+    
+    # Handle file content if provided
+    if file_content and filename:
+        try:
+            # Process file to extract text (direct bytes, no base64)
+            extracted_text, file_type = doc_processor.process_file(file_content, filename)
+            document_content = extracted_text
+            source_info = f"File: {filename} ({file_type.upper()})"
+            filename_for_agent = filename
+            
+        except Exception as e:
+            logger.error(f"Error processing file content: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
+    
+    if not document_content:
+        raise HTTPException(status_code=400, detail="No processable content found in request")
+
+    # Process with intelligent agent
+    logger.info(f"Processing request - Query: '{user_query[:100]}...', Input length: {len(document_content)}")
+    
+    result_data = crew_agent.process_query(user_query, document_content, filename_for_agent)
+    
+    # Extract the main response
+    result = getattr(result_data.get('result'), 'raw', str(result_data.get('result')))
+    agents_used = result_data.get('agents_used', ["CrewAI Multi-Agent System"])
+    crew_type = result_data.get('crew_type', 'multi_agent_processing')
+    complexity = result_data.get('complexity', 'auto_detected')
+    
+    # Calculate processing time
+    end_time = datetime.utcnow()
+    processing_time_ms = int((end_time - start_time).total_seconds() * 1000)
+    
+    agent_info = AgentInfo(
+        crew_type=crew_type,
+        complexity=complexity, 
+        agents_used=agents_used
+    )
+    
+    return DocumentProcessResponse(
+        status="success",
+        agent_response=result,
+        source=source_info,
+        user_query=user_query,
+        agent_info=agent_info,
+        processing_time_ms=processing_time_ms,
+        input_length=len(document_content),
+        timestamp=end_time.isoformat() + "Z"
+    )
+
+# Add these constants near the top of your file
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB in bytes
+MAX_TEXT_LENGTH = 10000  # characters
+
+# Add this validation function
+def validate_file_size(file_size: int, max_size: int = MAX_FILE_SIZE):
+    """Validate file size against maximum allowed size"""
+    if file_size > max_size:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File size {file_size} bytes exceeds maximum allowed size of {max_size} bytes"
+        )
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+def validate_text_length(text: str, max_length: int = MAX_TEXT_LENGTH):
+    """Validate text length against maximum allowed length"""
+    if text and len(text) > max_length:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Text length {len(text)} characters exceeds maximum allowed length of {max_length} characters"
+        )
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     try:
         initialize_components()
         logger.info("🚀 CrewAI Document Intelligence Agent API started successfully")
     except Exception as e:
-        logger.error(f"❌ Failed to start API: {e}")
-        # Don't raise here to allow health checks to work
-        pass
+        logger.error(f"❌ Failed to start API: {e}")    
+    yield
+
+# Update your FastAPI app initialization
+app = FastAPI(
+    title="CrewAI Document Intelligence Agent API",
+    description="Advanced document processing with multi-agent AI system using CrewAI, AWS Bedrock Claude 3 Sonnet, and comprehensive document intelligence capabilities",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan  # Add lifespan handler here
+)
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -190,9 +298,9 @@ async def root():
                 <h2>🧪 Quick Test</h2>
                 <p>Use curl to test the API:</p>
                 <pre style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
-curl -X POST http://localhost:7860/api/process \\
-  -H "Content-Type: application/json" \\
-  -d '{
+curl -X POST http://localhost:7860/api/process \
+  -H "Content-Type: application/json" \
+  -d '{ 
     "input_text": "This is a test document for analysis.",
     "user_query": "Summarize this document"
   }'</pre>
@@ -231,7 +339,6 @@ async def health_check():
         
         # Test AWS Bedrock connection (simple check)
         try:
-            import boto3
             session = boto3.Session()
             credentials = session.get_credentials()
             if credentials:
@@ -254,89 +361,18 @@ async def health_check():
 
 @app.post("/api/process", response_model=DocumentProcessResponse)
 async def process_document(request: DocumentProcessRequest):
-    """
-    Process document with CrewAI multi-agent system
-    
-    Compatible with AWS Marketplace requirements
-    """
-    start_time = datetime.utcnow()
-    
+    """Process document with CrewAI multi-agent system"""
     try:
-        # Initialize components if not already done
-        if not doc_processor or not crew_agent:
-            initialize_components()
+        file_content = None
+        if request.file_content:
+            file_content = base64.b64decode(request.file_content)
         
-        # Validate input
-        if not request.user_query:
-            raise HTTPException(status_code=400, detail="user_query is required")
-        
-        if not request.input_text and not (request.file_content and request.filename):
-            raise HTTPException(status_code=400, detail="Either input_text or (file_content + filename) must be provided")
-        
-        # Prepare input for agent
-        input_text = request.input_text
-        uploaded_file = None
-        
-        # Handle file content if provided
-        if request.file_content and request.filename:
-            try:
-                # Decode base64 file content
-                file_bytes = base64.b64decode(request.file_content)
-                
-                # Create temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(request.filename)[1]) as tmp_file:
-                    tmp_file.write(file_bytes)
-                    uploaded_file = tmp_file.name
-                
-            except Exception as e:
-                logger.error(f"Error processing file content: {e}")
-                raise HTTPException(status_code=400, detail=f"Invalid file content: {str(e)}")
-        
-        # Process with intelligent agent
-        logger.info(f"Processing request - Query: '{request.user_query[:100]}...', Input length: {len(input_text or '')}")
-        
-        result = intelligent_document_agent(
-            input_text=input_text,
-            uploaded_file=uploaded_file,
+        return await process_document_service(
+            input_text=request.input_text,
+            file_content=file_content,
+            filename=request.filename,
             user_query=request.user_query
         )
-        
-        # Clean up temporary file
-        if uploaded_file and os.path.exists(uploaded_file):
-            try:
-                os.unlink(uploaded_file)
-            except Exception as e:
-                logger.warning(f"Could not clean up temp file: {e}")
-        
-        # Calculate processing time
-        end_time = datetime.utcnow()
-        processing_time_ms = int((end_time - start_time).total_seconds() * 1000)
-        
-        # Parse result (the agent returns formatted markdown text)
-        source_info = "Direct text input"
-        if request.file_content and request.filename:
-            source_info = f"File: {request.filename}"
-        
-        # Extract agent info from result if available
-        agent_info = AgentInfo(
-            crew_type="multi_agent_processing",
-            complexity="auto_detected", 
-            agents_used=["CrewAI Multi-Agent System"]
-        )
-        
-        response = DocumentProcessResponse(
-            status="success",
-            agent_response=result,
-            source=source_info,
-            user_query=request.user_query,
-            agent_info=agent_info,
-            processing_time_ms=processing_time_ms,
-            input_length=len(input_text or request.file_content or ""),
-            timestamp=end_time.isoformat() + "Z"
-        )
-        
-        logger.info(f"Successfully processed request in {processing_time_ms}ms")
-        return response
         
     except HTTPException:
         raise
@@ -349,27 +385,15 @@ async def upload_file(
     file: UploadFile = File(...),
     query: str = Form(..., description="Query or instruction for processing the uploaded file")
 ):
-    """
-    Upload and process a file directly
-    
-    Alternative endpoint for file upload without base64 encoding
-    """
+    """Upload and process a file directly"""
     try:
-        # Read file content
         file_content = await file.read()
         
-        # Encode to base64 for processing
-        file_content_b64 = base64.b64encode(file_content).decode('utf-8')
-        
-        # Create request object
-        request = DocumentProcessRequest(
-            file_content=file_content_b64,
+        return await process_document_service(
+            file_content=file_content,
             filename=file.filename,
             user_query=query
         )
-        
-        # Process using the main endpoint
-        return await process_document(request)
         
     except Exception as e:
         logger.error(f"Error in file upload: {e}")
@@ -464,8 +488,6 @@ if __name__ == "__main__":
     # For local development
     uvicorn.run(
         "api_server:app",
-        host="0.0.0.0",
-        port=7860,
         reload=True,
         log_level="info"
     )
